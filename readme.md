@@ -63,28 +63,34 @@ if (match) {
 }
 ```
 
-## Example: Cloudflare Workers (JavaScript)
+## Example: Cloudflare Workers (TypeScript)
 
 _Use something like [wrangler](https://github.com/cloudflare/wrangler) to bundle the router with your worker code._
 
-```js
-import { Router } from 'tiny-request-router'
+```ts
+import { Router, Method, Params } from 'tiny-request-router';
 
-const router = new Router()
+type Handler = (params: Params) => Promise<Response>;
+
+const router = new Router<Handler>();
 router.get('/worker', async () => new Response('Hi from worker!'))
-router.get('/hello/:name', async params => new Response(`Hello ${params.name}!`))
+router.get('/hello/:name', async (params: Params) => new Response(`Hello ${params.name}!`))
 router.post('/test', async () => new Response('Post received!'))
 
-// Main entry point in workers
-addEventListener('fetch', event => {
-  const request = event.request
-  const { pathname } = new URL(request.url)
+export default {
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		const { DB } = env;
 
-  const match = router.match(request.method, pathname)
-  if (match) {
-    event.respondWith(match.handler(match.params))
-  }
-})
+		const { pathname } = new URL(request.url);
+		const match = router.match(request.method as Method, pathname);
+
+		if (match) {
+			return match.handler(match.params);
+		} else {
+			return new Response('Not Found', { status: 404 });
+		}
+	},
+};
 ```
 
 ---
@@ -95,20 +101,31 @@ addEventListener('fetch', event => {
 
 #### Table of Contents
 
-- [Method()](#method)
-- [RouteOptions()](#routeoptions)
-- [RouteMatch()](#routematch)
-- [class: Router](#class-router)
-  - [.routes](#routes)
-  - [.all(path, handler, options)](#allpath-handler-options)
-  - [.get(path, handler, options)](#getpath-handler-options)
-  - [.post(path, handler, options)](#postpath-handler-options)
-  - [.put(path, handler, options)](#putpath-handler-options)
-  - [.patch(path, handler, options)](#patchpath-handler-options)
-  - [.delete(path, handler, options)](#deletepath-handler-options)
-  - [.head(path, handler, options)](#headpath-handler-options)
-  - [.options(path, handler, options)](#optionspath-handler-options)
-  - [.match(method, path)](#matchmethod-path)
+- [tiny-request-router  ](#tiny-request-router--)
+  - [Features](#features)
+    - [Route testing](#route-testing)
+  - [Installation](#installation)
+  - [Usage (JavaScript/TypeScript)](#usage-javascripttypescript)
+    - [Make your handlers type safe (TypeScript)](#make-your-handlers-type-safe-typescript)
+  - [Example: Cloudflare Workers (TypeScript)](#example-cloudflare-workers-typescript)
+  - [API](#api)
+      - [Table of Contents](#table-of-contents)
+    - [Method()](#method)
+    - [RouteOptions()](#routeoptions)
+    - [RouteMatch()](#routematch)
+    - [class: Router](#class-router)
+      - [.routes](#routes)
+      - [.all(path, handler, options)](#allpath-handler-options)
+      - [.get(path, handler, options)](#getpath-handler-options)
+      - [.post(path, handler, options)](#postpath-handler-options)
+      - [.put(path, handler, options)](#putpath-handler-options)
+      - [.patch(path, handler, options)](#patchpath-handler-options)
+      - [.delete(path, handler, options)](#deletepath-handler-options)
+      - [.head(path, handler, options)](#headpath-handler-options)
+      - [.options(path, handler, options)](#optionspath-handler-options)
+      - [.match(method, path)](#matchmethod-path)
+  - [More info](#more-info)
+  - [License](#license)
 
 ### [Method()](https://github.com/berstend/tiny-request-router/blob/5e7d69be1e37a6d2d14c611efe77ba2ef6ea9f83/src/router.ts#L6-L6)
 
